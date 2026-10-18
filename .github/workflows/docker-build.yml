@@ -6,7 +6,11 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: hub.hzh.sealos.run/ns-wogv7ia1/smartspend
+  IMAGE_NAME: ghcr.io/siennazong/smartspend
+
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   build:
@@ -28,24 +32,18 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Sealos Registry
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: hub.hzh.sealos.run
-          username: ${{ secrets.SEALOS_REGISTRY_USERNAME }}
-          password: ${{ secrets.SEALOS_REGISTRY_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build runtime image
         run: |
           mkdir -p docker-context
           cp target/smartspend-web-1.0.0.jar docker-context/app.jar
-          cat > docker-context/Dockerfile <<'EOF'
-          FROM eclipse-temurin:17-jre
-          WORKDIR /app
-          COPY app.jar app.jar
-          EXPOSE 8080
-          ENTRYPOINT ["java", "-jar", "app.jar"]
-          EOF
+          printf 'FROM eclipse-temurin:17-jre\nWORKDIR /app\nCOPY app.jar app.jar\nEXPOSE 8080\nENTRYPOINT ["java", "-jar", "app.jar"]\n' > docker-context/Dockerfile
 
       - name: Build and push
         uses: docker/build-push-action@v5
