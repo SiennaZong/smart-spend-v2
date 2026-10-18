@@ -33,9 +33,9 @@ public class AiAnalysisService {
             "4. 给出 2-3 条具体可执行的优化建议；\n" +
             "5. 语气友好、鼓励，避免说教。";
 
-    /** 豆包 API 配置 */
-    private static final String ENDPOINT = "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
-    private static final String MODEL = "doubao-pro-32k";
+    /** 智谱 AI API 配置（GLM-4-Flash 完全免费） */
+    private static final String ENDPOINT = "https://open.bigmodel.cn/api/paas/v4/chat/completions";
+    private static final String MODEL = "glm-4-flash";
 
     private final StatsService stats;
     private final AppSettingRepository settingRepo;
@@ -50,7 +50,7 @@ public class AiAnalysisService {
 
     public String getApiKey(Long userId) {
         // 优先从环境变量读取
-        String envKey = System.getenv("DOUBAO_API_KEY");
+        String envKey = System.getenv("ZHIPU_API_KEY");
         if (envKey != null && !envKey.trim().isEmpty()) {
             return envKey.trim();
         }
@@ -63,7 +63,7 @@ public class AiAnalysisService {
         String key = getApiKey(userId);
 
         if (key == null || key.trim().isEmpty()) {
-            throw new IllegalStateException("未配置豆包 API Key，请设置环境变量 DOUBAO_API_KEY");
+            throw new IllegalStateException("未配置智谱 API Key，请设置环境变量 ZHIPU_API_KEY");
         }
 
         String userMessage = buildUserMessage(month, userId);
