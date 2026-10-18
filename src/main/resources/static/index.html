@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSpend - 个人生活记账本</title>
+    <link rel="stylesheet" href="css/style.css?v=20261017">
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<header class="topbar">
+    <div class="topbar-inner">
+        <div class="brand">
+            <h1 class="brand-title">SmartSpend</h1>
+            <p class="brand-sub">让每一笔消费都清清楚楚</p>
+        </div>
+        <div class="topbar-right">
+            <button id="btnTheme" class="btn-theme" title="切换主题">🌙</button>
+            <div id="userBox" class="user-box" hidden>
+                <span id="displayName" class="user-name"></span>
+                <button id="btnLogout" class="btn btn-ghost btn-logout">退出登录</button>
+            </div>
+            <button id="btnSettings" class="btn btn-ghost">⚙ API 设置</button>
+        </div>
+    </div>
+</header>
+
+<!-- 标签页导航 -->
+<nav class="tabs">
+    <button class="tab active" data-tab="overview">📈 概览</button>
+    <button class="tab" data-tab="entry">✏ 录入</button>
+    <button class="tab" data-tab="list">📋 明细</button>
+    <button class="tab" data-tab="stats">📊 统计</button>
+    <button class="tab" data-tab="budget">🎯 预算</button>
+    <button class="tab" data-tab="ai">🤖 AI 分析</button>
+</nav>
+
+<main class="main">
+
+    <!-- 仪表盘（概览） -->
+    <section id="tab-overview" class="panel active">
+        <div class="overview-grid">
+            <div class="ov-card">
+                <div class="ov-label">本月收入</div>
+                <div class="ov-value income" id="ovIncome">¥0.00</div>
+                <div class="ov-sub" id="ovIncomeSub">—</div>
+            </div>
+            <div class="ov-card">
+                <div class="ov-label">本月支出</div>
+                <div class="ov-value expense" id="ovExpense">¥0.00</div>
+                <div class="ov-sub" id="ovExpenseSub">—</div>
+            </div>
+            <div class="ov-card">
+                <div class="ov-label">本月结余</div>
+                <div class="ov-value balance" id="ovBalance">¥0.00</div>
+                <div class="ov-sub" id="ovBalanceSub">—</div>
+            </div>
+            <div class="ov-card">
+                <div class="ov-label">本月预算执行</div>
+                <div class="ov-value" id="ovBudgetPct" style="color:var(--primary)">0%</div>
+                <div class="ov-sub" id="ovBudgetSub">未设置预算</div>
+            </div>
+        </div>
+        <div class="charts-row">
+            <div class="card chart-card">
+                <h3 class="card-title">💸 支出 Top3 分类</h3>
+                <ul id="ovTopExpense" class="ov-list"></ul>
+            </div>
+            <div class="card chart-card">
+                <h3 class="card-title">📅 近 6 个月收支趋势</h3>
+                <div class="ov-mini-trend" id="ovMiniTrend"></div>
+                <div class="ov-mini-labels" id="ovMiniLabels"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 录入页 -->
+    <section id="tab-entry" class="panel">
+        <div class="card form-card">
+            <h2 class="card-title gradient-text">新增一笔记录</h2>
+            <form id="entryForm">
+                <div class="form-row">
+                    <label class="field-label">类型</label>
+                    <div class="radio-group">
+                        <label class="radio-pill"><input type="radio" name="txType" value="EXPENSE" checked><span>💸 支出</span></label>
+                        <label class="radio-pill"><input type="radio" name="txType" value="INCOME"><span>💵 收入</span></label>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <label class="field-label">分类</label>
+                    <select id="category" class="input"></select>
+                </div>
+                <div class="form-row">
+                    <label class="field-label">日期</label>
+                    <input type="date" id="date" class="input" required>
+                </div>
+                <div class="form-row">
+                    <label class="field-label">金额 (¥)</label>
+                    <input type="number" id="amount" class="input" step="0.01" min="0.01" placeholder="0.00" required>
+                </div>
+                <div class="form-row">
+                    <label class="field-label">备注</label>
+                    <input type="text" id="note" class="input" maxlength="200" placeholder="选填，例如：午餐 - 食堂">
+                </div>
+                <div id="noteHint" class="note-hint" hidden>
+                    <div class="note-hint-title">💡 常用备注</div>
+                    <div class="note-hint-list" id="noteHintList"></div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg">保存记录</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- 明细页 -->
+    <section id="tab-list" class="panel">
+        <div class="card toolbar filter-row">
+            <label class="field-label">月份</label>
+            <select id="txMonth" class="input input-month"></select>
+            <div class="filter-pills" id="filterType">
+                <button class="filter-pill active" data-type="ALL">全部</button>
+                <button class="filter-pill" data-type="EXPENSE">💸 支出</button>
+                <button class="filter-pill" data-type="INCOME">💵 收入</button>
+            </div>
+            <input type="text" id="txSearch" class="input search-input" placeholder="🔍 搜索备注…">
+            <button id="btnRefreshTx" class="btn btn-secondary">刷新</button>
+            <button id="btnExport" class="btn btn-secondary">⬇ 导出 CSV</button>
+        </div>
+        <div class="summary-row">
+            <div class="stat-card"><span class="stat-label">收入</span><span class="stat-value income" id="sumIncome">¥0.00</span></div>
+            <div class="stat-card"><span class="stat-label">支出</span><span class="stat-value expense" id="sumExpense">¥0.00</span></div>
+            <div class="stat-card"><span class="stat-label">结余</span><span class="stat-value balance" id="sumBalance">¥0.00</span></div>
+        </div>
+        <div class="card table-card">
+            <table class="data-table">
+                <thead>
+                <tr><th>日期</th><th>类型</th><th>分类</th><th class="num">金额</th><th>备注</th><th class="op">操作</th></tr>
+                </thead>
+                <tbody id="txBody"></tbody>
+            </table>
+            <div id="txEmpty" class="empty-hint">本月暂无记录，去「录入」页添加一笔吧～</div>
+        </div>
+    </section>
+
+    <!-- 统计页 -->
+    <section id="tab-stats" class="panel">
+        <div class="card toolbar">
+            <label class="field-label">月份</label>
+            <select id="statsMonth" class="input input-month"></select>
+            <button id="btnRefreshStats" class="btn btn-secondary">刷新</button>
+        </div>
+        <div class="summary-row">
+            <div class="stat-card"><span class="stat-label">收入</span><span class="stat-value income" id="stIncome">¥0.00</span></div>
+            <div class="stat-card"><span class="stat-label">支出</span><span class="stat-value expense" id="stExpense">¥0.00</span></div>
+            <div class="stat-card"><span class="stat-label">结余</span><span class="stat-value balance" id="stBalance">¥0.00</span></div>
+        </div>
+        <div class="charts-row">
+            <div class="card chart-card">
+                <h3 class="card-title">支出分类占比</h3>
+                <div class="chart-wrap"><canvas id="pieChart"></canvas></div>
+            </div>
+            <div class="card chart-card">
+                <h3 class="card-title">近 6 个月收支趋势</h3>
+                <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+            </div>
+        </div>
+        <div class="card anomaly-card" id="anomalyCard" hidden>
+            <h3 class="card-title">⚠ 消费提醒</h3>
+            <ul id="anomalyList" class="anomaly-list"></ul>
+        </div>
+    </section>
+
+    <!-- 预算页 -->
+    <section id="tab-budget" class="panel">
+        <div class="card toolbar">
+            <label class="field-label">查看月份</label>
+            <select id="budgetMonth" class="input input-month"></select>
+            <button id="btnSaveBudgets" class="btn btn-primary">保存所有预算</button>
+        </div>
+        <div class="card">
+            <div id="budgetList" class="budget-list"></div>
+        </div>
+    </section>
+
+    <!-- AI 分析页 -->
+    <section id="tab-ai" class="panel">
+        <div class="card toolbar">
+            <label class="field-label">分析月份</label>
+            <select id="aiMonth" class="input input-month"></select>
+            <button id="btnAnalyze" class="btn btn-primary">生成 AI 消费分析报告</button>
+        </div>
+        <div id="aiStatus" class="ai-status"></div>
+        <div class="card report-card">
+            <div id="aiReport" class="report">点击上方按钮，AI 理财顾问将基于你的本月收支、预算执行与异常检测数据生成一份专属分析报告。</div>
+        </div>
+    </section>
+
+</main>
+
+<!-- API 设置弹窗 -->
+<div id="settingsModal" class="modal-mask" hidden>
+    <div class="modal">
+        <h2 class="card-title gradient-text">API 设置</h2>
+        <div class="form-row">
+            <label class="field-label">API 地址</label>
+            <input type="text" id="setEndpoint" class="input">
+        </div>
+        <div class="form-row">
+            <label class="field-label">API Key</label>
+            <input type="password" id="setKey" class="input" placeholder="sk-...">
+        </div>
+        <div class="form-row">
+            <label class="field-label">模型</label>
+            <input type="text" id="setModel" class="input">
+        </div>
+        <p class="hint">兼容 OpenAI 格式接口，默认 DeepSeek。Key 仅保存在服务端数据库中。</p>
+        <div class="modal-actions">
+            <button id="btnSaveSettings" class="btn btn-primary">保存</button>
+            <button id="btnCloseSettings" class="btn btn-secondary">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑记录弹窗 -->
+<div id="editModal" class="modal-mask" hidden>
+    <div class="modal">
+        <h2 class="card-title gradient-text">编辑记录</h2>
+        <div class="form-row">
+            <label class="field-label">类型</label>
+            <div class="radio-group">
+                <label class="radio-pill"><input type="radio" name="editType" value="EXPENSE" checked><span>💸 支出</span></label>
+                <label class="radio-pill"><input type="radio" name="editType" value="INCOME"><span>💵 收入</span></label>
+            </div>
+        </div>
+        <div class="form-row">
+            <label class="field-label">分类</label>
+            <select id="editCategory" class="input"></select>
+        </div>
+        <div class="form-row">
+            <label class="field-label">日期</label>
+            <input type="date" id="editDate" class="input">
+        </div>
+        <div class="form-row">
+            <label class="field-label">金额 (¥)</label>
+            <input type="number" id="editAmount" class="input" step="0.01" min="0.01" placeholder="0.00">
+        </div>
+        <div class="form-row">
+            <label class="field-label">备注</label>
+            <input type="text" id="editNote" class="input" maxlength="200" placeholder="选填">
+        </div>
+        <div class="modal-actions">
+            <button id="btnSaveEdit" class="btn btn-primary">保存修改</button>
+            <button id="btnCloseEdit" class="btn btn-secondary">取消</button>
+        </div>
+    </div>
+</div>
+
+<!-- 登录 / 注册遮罩 -->
+<div id="loginMask" class="login-mask" hidden>
+    <div class="login-card">
+        <h1 class="login-title gradient-text">SmartSpend</h1>
+
+        <!-- 登录视图 -->
+        <div id="loginView">
+            <p class="login-sub">登录你的账号，让每一笔消费都清清楚楚</p>
+            <div class="form-row">
+                <label class="field-label">用户名</label>
+                <input type="text" id="loginUsername" class="input" maxlength="20" placeholder="中文 / 字母 / 数字 / 下划线">
+            </div>
+            <div class="form-row">
+                <label class="field-label">密码</label>
+                <input type="password" id="loginPassword" class="input" placeholder="请输入密码">
+            </div>
+            <p id="loginError" class="login-error" hidden></p>
+            <button id="btnLogin" class="btn btn-primary btn-lg">登录</button>
+            <button id="btnGoRegister" class="btn btn-secondary btn-lg">注册新账号</button>
+            <p class="hint login-hint">还没有账号？点击上方「注册新账号」创建。</p>
+        </div>
+
+        <!-- 注册视图 -->
+        <div id="registerView" hidden>
+            <p class="login-sub">创建新账号，数据将按账号独立保存</p>
+            <div class="form-row">
+                <label class="field-label">用户名</label>
+                <input type="text" id="regUsername" class="input" maxlength="20" placeholder="中文 / 字母 / 数字 / 下划线">
+            </div>
+            <div class="form-row">
+                <label class="field-label">密码</label>
+                <input type="password" id="regPassword" class="input" placeholder="至少 6 位">
+            </div>
+            <div class="form-row">
+                <label class="field-label">确认密码</label>
+                <input type="password" id="regConfirm" class="input" placeholder="请再次输入密码">
+            </div>
+            <p id="regError" class="login-error" hidden></p>
+            <button id="btnDoRegister" class="btn btn-primary btn-lg">确认注册</button>
+            <button id="btnBackLogin" class="btn btn-secondary btn-lg">← 返回登录</button>
+            <p class="hint login-hint">第一个注册的账号将自动认领历史迁移数据。</p>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="js/chart.umd.min.js?v=1" defer></script>
+<script src="js/app.js?v=20261017" defer></script>
+</body>
+</html>
