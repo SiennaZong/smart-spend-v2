@@ -9,6 +9,8 @@ const MONTH_FMT = { year: "numeric", month: "2-digit" };
 
 let pieChart = null;
 let barChart = null;
+let ovPieChart = null;
+let ovBarChart = null;
 let categories = [];
 let currentUser = null;
 let txCache = [];
@@ -283,39 +285,9 @@ async function loadOverview() {
             $("#ovBudgetSub").textContent = "未设置预算";
         }
 
-        // Top3 支出分类
-        const top = (stats.expenseByCategory || []).slice(0, 3);
-        const maxTop = top.length ? top[0].amount : 1;
-        if (top.length === 0) {
-            $("#ovTopExpense").innerHTML = `<li style="color:var(--text-muted)">本月暂无支出记录</li>`;
-        } else {
-            $("#ovTopExpense").innerHTML = top.map((c) => `
-                <li>
-                    <span class="cat-icon">${c.icon}</span>
-                    <span class="cat-name">${c.category}</span>
-                    <div class="cat-bar-wrap"><div class="cat-bar" style="width:${c.amount / maxTop * 100}%"></div></div>
-                    <span class="cat-amt" style="color:var(--expense)">-${fmtMoney(c.amount).replace("¥","")}</span>
-                </li>
-            `).join("");
-        }
-
-        // 迷你趋势（近 6 个月收支双柱）
-        const trend = stats.trend || [];
-        const maxTrend = trend.reduce((m, t) => Math.max(m, t.income, t.expense), 0) || 1;
-        const barsHtml = trend.map((t) => {
-            const incH = Math.max(4, t.income / maxTrend * 70);
-            const expH = Math.max(4, t.expense / maxTrend * 70);
-            return `
-                <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;position:relative">
-                    <div class="bar" style="height:${incH}px;background:#10b981" data-tip="收入 ${fmtMoney(t.income)}"></div>
-                    <div class="bar" style="height:${expH}px;background:#ef4444" data-tip="支出 ${fmtMoney(t.expense)}"></div>
-                </div>
-            `;
-        }).join("");
-        $("#ovMiniTrend").innerHTML = barsHtml || `<div style="color:var(--text-muted);font-size:13px">暂无数据</div>`;
-        $("#ovMiniLabels").innerHTML = trend.map((t) =>
-            `<span>${String(t.month).slice(5)}月</span>`
-        ).join("") || "";
+        // 支出分类占比饼图 + 近6个月收支趋势柱状图（Chart.js）
+        ovPieChart = renderPieChart("#ovPieChart", ovPieChart, stats.expenseByCategory || []);
+        ovBarChart = renderBarChart("#ovBarChart", ovBarChart, stats.trend || []);
 
         // 缓存
         fullStatsCache = stats;
@@ -587,19 +559,18 @@ function currentChartText() {
     return dark ? "#cbd5e1" : "#64748b";
 }
 
-function renderPie(rows) {
-    const ctx = $("#pieChart").getContext("2d");
-    if (pieChart) pieChart.destroy();
+function renderPieChart(canvasId, chart, rows) {
+    const ctx = $(canvasId).getContext("2d");
+    if (chart) chart.destroy();
     const borderColor = currentChartBorder();
     if (!rows.length) {
-        pieChart = new Chart(ctx, {
+        return new Chart(ctx, {
             type: "doughnut",
             data: { labels: ["暂无支出"], datasets: [{ data: [1], backgroundColor: ["#e2e8f0"], borderWidth: 2, borderColor }] },
             options: { plugins: { legend: { display: false, labels: { color: currentChartText() } } } }
         });
-        return;
     }
-    pieChart = new Chart(ctx, {
+    return new Chart(ctx, {
         type: "doughnut",
         data: {
             labels: rows.map((r) => r.icon + " " + r.category),
@@ -624,10 +595,10 @@ function renderPie(rows) {
     });
 }
 
-function renderBar(trend) {
-    const ctx = $("#barChart").getContext("2d");
-    if (barChart) barChart.destroy();
-    barChart = new Chart(ctx, {
+function renderBarChart(canvasId, chart, trend) {
+    const ctx = $(canvasId).getContext("2d");
+    if (chart) chart.destroy();
+    return new Chart(ctx, {
         type: "bar",
         data: {
             labels: trend.map((t) => t.month),
@@ -658,8 +629,8 @@ async function loadStats() {
     $("#stExpense").textContent = fmtMoney(data.summary.expense);
     $("#stBalance").textContent = fmtMoney(data.summary.balance);
 
-    renderPie(data.expenseByCategory);
-    renderBar(data.trend);
+    pieChart = renderPieChart("#pieChart", pieChart, data.expenseByCategory);
+    barChart = renderBarChart("#barChart", barChart, data.trend);
 
     const card = $("#anomalyCard");
     const list = $("#anomalyList");

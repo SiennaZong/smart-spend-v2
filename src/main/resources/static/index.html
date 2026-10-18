@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartSpend - 个人生活记账本</title>
-    <link rel="stylesheet" href="css/style.css?v=20261017">
+    <link rel="stylesheet" href="css/style.css?v=20261018">
 </head>
 <body>
 
@@ -63,13 +63,12 @@
         </div>
         <div class="charts-row">
             <div class="card chart-card">
-                <h3 class="card-title">💸 支出 Top3 分类</h3>
-                <ul id="ovTopExpense" class="ov-list"></ul>
+                <h3 class="card-title">💸 支出分类占比</h3>
+                <div class="chart-wrap"><canvas id="ovPieChart"></canvas></div>
             </div>
             <div class="card chart-card">
                 <h3 class="card-title">📅 近 6 个月收支趋势</h3>
-                <div class="ov-mini-trend" id="ovMiniTrend"></div>
-                <div class="ov-mini-labels" id="ovMiniLabels"></div>
+                <div class="chart-wrap"><canvas id="ovBarChart"></canvas></div>
             </div>
         </div>
     </section>
@@ -287,6 +286,6 @@
 <div id="toast" class="toast" hidden></div>
 
 <script src="js/chart.umd.min.js?v=1" defer></script>
-<script src="js/app.js?v=20261017" defer></script>
+<script src="js/app.js?v=20261018" defer></script>
 </body>
 </html>
