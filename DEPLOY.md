@@ -9,25 +9,36 @@ java -jar target/smartspend-web-1.0.0.jar
 
 浏览器访问 http://localhost:8080 ，首次使用需注册账号；本地 H2 数据库文件生成在 `data/` 目录。也可直接双击项目根目录的「启动SmartSpend网站.bat」。
 
-## 二、部署到 Render（免费，推荐）
+## 二、部署到 Koyeb（免费，推荐，无需信用卡）
 
-Render 免费档：512MB 内存，15 分钟无访问会休眠（下次打开约等 30 秒唤醒）。数据库用 Aiven 免费 MySQL（1GB，永久免费，无需绑卡）。
+Koyeb Hobby 档：512MB 内存 / 0.1 vCPU，永久免费、无需绑卡；空闲会休眠，下次打开稍等几秒唤醒。数据库用 Aiven 免费 MySQL（1GB，永久免费，无需绑卡）。
 
-1. 把 `smartspend-web` 目录推送到 GitHub 仓库（`Dockerfile` 已备好，Render 会自动识别 Docker 构建）。
+1. 把 `smartspend-web` 目录推送到 GitHub 仓库（`Dockerfile` 已备好，Koyeb 会自动识别 Docker 构建）。
 2. 到 [aiven.io](https://aiven.io) 注册 → **Create service** → **MySQL** → **Free plan** → 任选区域创建。在服务详情页 **Overview** 找到连接信息（Host / Port / User / Password / Database）。
-3. 到 [render.com](https://render.com) 注册（可用 GitHub 登录）→ **New + → Web Service** → 连接 GitHub 仓库 → Language 选 **Docker**。
-4. 在 **Environment Variables** 添加（值来自第 2 步 Aiven 页面）：
+3. 到 [koyeb.com](https://www.koyeb.com) 注册（可用 GitHub 登录）→ **Create Web Service** → **GitHub** → 选择该仓库，Builder 选 **Dockerfile**。
+4. 配置：Instance 选 **Free**（512MB）；Region 选 **Frankfurt** 或 **Washington**（免费档仅欧美节点）；**Ports 把默认 8000 改为 8080**。
+5. 在 **Environment Variables** 添加（值来自第 2 步 Aiven 页面）：
    ```
    SPRING_PROFILES_ACTIVE = mysql
    MYSQL_URL = jdbc:mysql://<Host>:<Port>/<Database>?sslMode=REQUIRED&serverTimezone=Asia/Shanghai&characterEncoding=utf8
    MYSQLUSER = <User>
    MYSQLPASSWORD = <Password>
    ```
-5. 点 **Create Web Service**，等待首次构建（约 5~10 分钟）。完成后 Render 会分配 `https://xxx.onrender.com` 公网网址，发给任何人即可访问。
+6. 点 **Deploy**，等待首次构建（约 5~10 分钟）。完成后 Koyeb 会分配 `https://xxx.koyeb.app` 公网网址，发给任何人即可访问。
 
 > 部署后是全新的云端数据库（不含本地数据）；每个用户注册后数据互相隔离，AI 接口设置也按用户独立保存。
 
-## 三、部署到 Railway（备选，付费）
+## 三、部署到 Render（备选，免费但需绑卡验证）
+
+Render 免费档：512MB 内存，15 分钟无访问会休眠（下次打开约等 30 秒唤醒）。注意：新账号首次部署可能要求绑定 Visa/Mastercard 做 $1 预授权验证（不扣费）；没有国际信用卡请改用 Koyeb。
+
+1. 把 `smartspend-web` 目录推送到 GitHub 仓库（`Dockerfile` 已备好，Render 会自动识别 Docker 构建）。
+2. 准备数据库（同 Koyeb 方案第 2 步，Aiven 免费 MySQL）。
+3. 到 [render.com](https://render.com) 注册（可用 GitHub 登录）→ **New + → Web Service** → 连接 GitHub 仓库 → Language 选 **Docker**。
+4. 在 **Environment Variables** 添加上述同样的 4 个变量。
+5. 点 **Create Web Service**，等待首次构建。完成后 Render 会分配 `https://xxx.onrender.com` 公网网址。
+
+## 四、部署到 Railway（备选，付费）
 
 1. 把 `smartspend-web` 目录推送到 GitHub 仓库（`.gitignore` 已排除构建产物与本地数据）。
 2. 登录 [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo**，选择该仓库，Railway 会按 `railway.json` 自动构建（Nixpacks + Maven，Java 17 由 `system.properties` 指定）。
