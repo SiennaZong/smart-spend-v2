@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 
 /**
  * AI 消费分析服务，逻辑移植自桌面版 AIAnalysisService，
- * API 配置从数据库 app_settings 表读取
+ * 固定使用豆包（Doubao）API，API Key 优先从环境变量 DOUBAO_API_KEY 读取
  */
 @Service
 public class AiAnalysisService {
@@ -33,73 +33,45 @@ public class AiAnalysisService {
             "4. 给出 2-3 条具体可执行的优化建议；\n" +
             "5. 语气友好、鼓励，避免说教。";
 
-    private static final String KEY_ENDPOINT = "api.endpoint";
-    private static final String KEY_API_KEY = "api.key";
-    private static final String KEY_MODEL = "api.model";
+    /** 豆包 API 配置 */
+    private static final String ENDPOINT = "https://ark.cn-beijing.volces.com/api/v3/chat/completions";
+    private static final String MODEL = "doubao-pro-32k";
 
     private final StatsService stats;
     private final AppSettingRepository settingRepo;
 
-    @Value("${app.ai.default-endpoint}")
-    private String defaultEndpoint;
-
-    @Value("${app.ai.default-model}")
-    private String defaultModel;
+    @Value("${app.ai.default-api-key:}")
+    private String defaultApiKey;
 
     public AiAnalysisService(StatsService stats, AppSettingRepository settingRepo) {
         this.stats = stats;
         this.settingRepo = settingRepo;
     }
 
-    public String getEndpoint(Long userId) {
-        return settingRepo.findByUserIdAndSettingKey(userId, KEY_ENDPOINT)
-                .map(AppSetting::getSettingValue).orElse(defaultEndpoint);
-    }
-
-    public String getModel(Long userId) {
-        return settingRepo.findByUserIdAndSettingKey(userId, KEY_MODEL)
-                .map(AppSetting::getSettingValue).orElse(defaultModel);
-    }
-
     public String getApiKey(Long userId) {
-        return settingRepo.findByUserIdAndSettingKey(userId, KEY_API_KEY)
-                .map(AppSetting::getSettingValue).orElse("");
-    }
-
-    public void saveSettings(Long userId, String endpoint, String apiKey, String model) {
-        save(userId, KEY_ENDPOINT, endpoint);
-        save(userId, KEY_API_KEY, apiKey);
-        save(userId, KEY_MODEL, model);
-    }
-
-    private void save(Long userId, String key, String value) {
-        if (value == null) {
-            value = "";
+        // 优先从环境变量读取
+        String envKey = System.getenv("DOUBAO_API_KEY");
+        if (envKey != null && !envKey.trim().isEmpty()) {
+            return envKey.trim();
         }
-        AppSetting setting = settingRepo.findByUserIdAndSettingKey(userId, key)
-                .orElse(new AppSetting(userId, key, ""));
-        setting.setSettingValue(value.trim());
-        settingRepo.save(setting);
+        // 其次从数据库读取
+        return settingRepo.findByUserIdAndSettingKey(userId, "api.key")
+                .map(AppSetting::getSettingValue).orElse(defaultApiKey);
     }
 
     public String analyze(YearMonth month, Long userId) throws Exception {
-        String endpoint = getEndpoint(userId);
         String key = getApiKey(userId);
-        String model = getModel(userId);
 
-        if (endpoint == null || endpoint.trim().isEmpty()) {
-            throw new IllegalStateException("未配置 API 地址");
-        }
         if (key == null || key.trim().isEmpty()) {
-            throw new IllegalStateException("未配置 API Key，请在设置中填写");
+            throw new IllegalStateException("未配置豆包 API Key，请设置环境变量 DOUBAO_API_KEY");
         }
 
         String userMessage = buildUserMessage(month, userId);
-        String body = buildRequestBody(model, userMessage);
+        String body = buildRequestBody(MODEL, userMessage);
 
         HttpURLConnection conn = null;
         try {
-            URL url = new URL(endpoint);
+            URL url = new URL(ENDPOINT);
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("POST");
             conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");

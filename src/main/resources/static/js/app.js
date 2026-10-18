@@ -772,43 +772,6 @@ $("#btnAnalyze").addEventListener("click", async () => {
     }
 });
 
-/* ---------- API 设置 ---------- */
-async function openSettings() {
-    try {
-        const s = await api("/api/settings");
-        $("#setEndpoint").value = s.endpoint || "";
-        $("#setKey").value = s.apiKey || "";
-        $("#setModel").value = s.model || "";
-        $("#settingsModal").hidden = false;
-    } catch (err) {
-        toast(err.message, "error");
-    }
-}
-
-$("#btnSettings").addEventListener("click", openSettings);
-$("#btnCloseSettings").addEventListener("click", () => { $("#settingsModal").hidden = true; });
-$("#settingsModal").addEventListener("click", (e) => {
-    if (e.target === $("#settingsModal")) $("#settingsModal").hidden = true;
-});
-
-$("#btnSaveSettings").addEventListener("click", async () => {
-    try {
-        await api("/api/settings", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                endpoint: $("#setEndpoint").value,
-                apiKey: $("#setKey").value,
-                model: $("#setModel").value
-            })
-        });
-        $("#settingsModal").hidden = true;
-        toast("设置已保存", "success");
-    } catch (err) {
-        toast(err.message, "error");
-    }
-});
-
 /* ---------- 工具 ---------- */
 function escapeHtml(s) {
     const div = document.createElement("div");

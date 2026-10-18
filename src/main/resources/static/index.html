@@ -21,7 +21,6 @@
                 <span id="displayName" class="user-name"></span>
                 <button id="btnLogout" class="btn btn-ghost btn-logout">退出登录</button>
             </div>
-            <button id="btnSettings" class="btn btn-ghost">⚙ API 设置</button>
         </div>
     </div>
 </header>
@@ -197,30 +196,6 @@
     </section>
 
 </main>
-
-<!-- API 设置弹窗 -->
-<div id="settingsModal" class="modal-mask" hidden>
-    <div class="modal">
-        <h2 class="card-title gradient-text">API 设置</h2>
-        <div class="form-row">
-            <label class="field-label">API 地址</label>
-            <input type="text" id="setEndpoint" class="input">
-        </div>
-        <div class="form-row">
-            <label class="field-label">API Key</label>
-            <input type="password" id="setKey" class="input" placeholder="sk-...">
-        </div>
-        <div class="form-row">
-            <label class="field-label">模型</label>
-            <input type="text" id="setModel" class="input">
-        </div>
-        <p class="hint">兼容 OpenAI 格式接口，默认 DeepSeek。Key 仅保存在服务端数据库中。</p>
-        <div class="modal-actions">
-            <button id="btnSaveSettings" class="btn btn-primary">保存</button>
-            <button id="btnCloseSettings" class="btn btn-secondary">取消</button>
-        </div>
-    </div>
-</div>
 
 <!-- 编辑记录弹窗 -->
 <div id="editModal" class="modal-mask" hidden>

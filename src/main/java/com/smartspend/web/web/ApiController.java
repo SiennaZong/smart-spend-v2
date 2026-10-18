@@ -329,26 +329,7 @@ public class ApiController {
         }
     }
 
-    // ==================== AI 设置与分析 ====================
-
-    @GetMapping("/settings")
-    public Map<String, Object> settings(@RequestAttribute("userId") Long userId) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("endpoint", ai.getEndpoint(userId));
-        m.put("apiKey", ai.getApiKey(userId));
-        m.put("model", ai.getModel(userId));
-        return m;
-    }
-
-    @PostMapping("/settings")
-    public ResponseEntity<?> saveSettings(@RequestBody Map<String, Object> body,
-                                          @RequestAttribute("userId") Long userId) {
-        ai.saveSettings(userId,
-                str(body.get("endpoint")),
-                str(body.get("apiKey")),
-                str(body.get("model")));
-        return ResponseEntity.ok(Collections.singletonMap("ok", true));
-    }
+    // ==================== AI 分析 ====================
 
     @PostMapping("/ai/analyze")
     public ResponseEntity<?> analyze(@RequestAttribute("userId") Long userId,
