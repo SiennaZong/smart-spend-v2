@@ -40,8 +40,14 @@ public class AuthController {
         this.settingRepo = settingRepo;
     }
 
+    /** 最大允许注册用户数（个人使用，防止陌生人注册产生费用） */
+    private static final int MAX_USERS = 1;
+
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, Object> body, HttpSession session) {
+        if (userRepo.count() >= MAX_USERS) {
+            return badRequest("注册已关闭，当前为个人使用模式");
+        }
         String username = str(body.get("username")).trim();
         String password = str(body.get("password"));
         if (username.isEmpty() || username.length() > 20) {
