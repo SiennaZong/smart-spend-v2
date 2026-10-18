@@ -512,21 +512,96 @@ select.input { cursor: pointer; }
 .login-mask {
     position: fixed;
     inset: 0;
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #a855f7 100%);
+    background: linear-gradient(-45deg, #4f46e5, #7c3aed, #a855f7, #6366f1, #4f46e5);
+    background-size: 400% 400%;
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 300;
-    animation: fadeIn .3s ease;
+    animation: fadeIn .3s ease, gradientFlow 15s ease infinite;
+    overflow: hidden;
+}
+
+@keyframes gradientFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* 浮动几何图形 */
+.floating-shapes {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.shape {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    animation: float 20s infinite ease-in-out;
+}
+
+.shape-1 {
+    width: 300px; height: 300px;
+    top: -100px; left: -100px;
+    animation-delay: 0s;
+}
+
+.shape-2 {
+    width: 200px; height: 200px;
+    top: 20%; right: -50px;
+    animation-delay: 2s;
+    animation-duration: 18s;
+}
+
+.shape-3 {
+    width: 150px; height: 150px;
+    bottom: 10%; left: 10%;
+    animation-delay: 4s;
+    animation-duration: 22s;
+}
+
+.shape-4 {
+    width: 100px; height: 100px;
+    top: 60%; right: 20%;
+    animation-delay: 1s;
+    animation-duration: 16s;
+}
+
+.shape-5 {
+    width: 250px; height: 250px;
+    bottom: -80px; right: -80px;
+    animation-delay: 3s;
+    animation-duration: 25s;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+    33% { transform: translateY(-30px) rotate(120deg) scale(1.1); }
+    66% { transform: translateY(15px) rotate(240deg) scale(0.9); }
 }
 
 .login-card {
-    background: var(--card);
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     border-radius: 20px;
     padding: 36px 34px;
     width: 420px;
     max-width: calc(100vw - 40px);
-    box-shadow: 0 20px 60px rgba(30, 27, 75, .45);
+    box-shadow: 0 20px 60px rgba(30, 27, 75, .35), 0 0 0 1px rgba(255,255,255,.1) inset;
+    position: relative;
+    z-index: 1;
+}
+
+/* 深色模式下的登录卡片 */
+[data-theme="dark"] .login-card {
+    background: rgba(30, 27, 75, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .5), 0 0 0 1px rgba(255,255,255,.05) inset;
 }
 
 .login-title {
@@ -573,6 +648,7 @@ select.input { cursor: pointer; }
 
 .toast.success { background: var(--income); }
 .toast.error { background: var(--expense); }
+.toast.warning { background: #f59e0b; }
 
 /* ===== 主题切换按钮 ===== */
 .btn-theme {

@@ -374,6 +374,7 @@ $("#entryForm").addEventListener("submit", async (e) => {
         $("#amount").value = "";
         $("#note").value = "";
         updateNoteHints();
+        checkBudgetWarning(body.category, Number(body.amount));
         if ($("#tab-overview").classList.contains("active")) loadOverview();
         if ($("#tab-list").classList.contains("active")) loadTransactions();
     } catch (err) {
@@ -550,6 +551,29 @@ async function updateNoteHints() {
 }
 $("#category").addEventListener("change", updateNoteHints);
 
+/* ---------- 预算超支提醒 ---------- */
+async function checkBudgetWarning(category, newAmount) {
+    const cat = categories.find(c => c.name === category);
+    if (!cat || cat.type !== "EXPENSE") return;
+    try {
+        const month = monthOptions()[0];
+        const [budgetData, statsData] = await Promise.all([
+            api("/api/budgets?month=" + month),
+            api("/api/stats?month=" + month)
+        ]);
+        const budget = (budgetData.list || []).find(b => b.category === category);
+        if (!budget || !budget.limit || budget.limit <= 0) return;
+        const spentMap = {};
+        (statsData.budgetUsage || []).forEach(u => { spentMap[u.category] = u.spent; });
+        const spent = spentMap[category] || 0;
+        if (spent > budget.limit) {
+            toast(`⚠️ ${category} 已超支！已用 ¥${spent.toFixed(0)} / 预算 ¥${budget.limit}`, "error");
+        } else if (spent > budget.limit * 0.8) {
+            toast(`⚠️ ${category} 已用 ${(spent / budget.limit * 100).toFixed(0)}%，接近预算上限`, "warning");
+        }
+    } catch (e) { /* 忽略 */ }
+}
+
 /* ---------- 统计 ---------- */
 const PALETTE = ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981",
     "#3b82f6", "#ef4444", "#14b8a6", "#a855f7", "#64748b"];
@@ -678,6 +702,33 @@ async function loadBudgets() {
         </div>`;
     }).join("");
 }
+
+$("#btnCopyBudgets").addEventListener("click", async () => {
+    const currentMonth = $("#budgetMonth").value;
+    const [y, m] = currentMonth.split("-").map(Number);
+    let lastM = m - 1, lastY = y;
+    if (lastM === 0) { lastM = 12; lastY = y - 1; }
+    const lastMonth = `${lastY}-${String(lastM).padStart(2, "0")}`;
+    try {
+        const data = await api("/api/budgets?month=" + lastMonth);
+        const budgets = (data.list || []).filter(b => b.limit > 0);
+        if (budgets.length === 0) {
+            toast("上月没有设置预算", "error");
+            return;
+        }
+        for (const b of budgets) {
+            await api("/api/budgets", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ month: currentMonth, category: b.category, limit: b.limit })
+            });
+        }
+        toast(`已复制上月 ${budgets.length} 项预算！`, "success");
+        loadBudgets();
+    } catch (err) {
+        toast(err.message, "error");
+    }
+});
 
 $("#btnSaveBudgets").addEventListener("click", async () => {
     const month = $("#budgetMonth").value;

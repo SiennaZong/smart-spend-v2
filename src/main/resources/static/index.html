@@ -175,6 +175,7 @@
         <div class="card toolbar">
             <label class="field-label">查看月份</label>
             <select id="budgetMonth" class="input input-month"></select>
+            <button id="btnCopyBudgets" class="btn btn-secondary">📋 复制上月预算</button>
             <button id="btnSaveBudgets" class="btn btn-primary">保存所有预算</button>
         </div>
         <div class="card">
@@ -257,6 +258,14 @@
 
 <!-- 登录 / 注册遮罩 -->
 <div id="loginMask" class="login-mask" hidden>
+    <!-- 动态浮动几何图形 -->
+    <div class="floating-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+        <div class="shape shape-5"></div>
+    </div>
     <div class="login-card">
         <h1 class="login-title gradient-text">SmartSpend</h1>
 
