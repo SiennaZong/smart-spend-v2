@@ -1,0 +1,55 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: hub.hzh.sealos.run/ns-wogv7ia1/smartspend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with Maven
+        run: ./mvnw -DskipTests package
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Sealos Registry
+        uses: docker/login-action@v3
+        with:
+          registry: hub.hzh.sealos.run
+          username: ${{ secrets.SEALOS_REGISTRY_USERNAME }}
+          password: ${{ secrets.SEALOS_REGISTRY_PASSWORD }}
+
+      - name: Build runtime image
+        run: |
+          mkdir -p docker-context
+          cp target/smartspend-web-1.0.0.jar docker-context/app.jar
+          cat > docker-context/Dockerfile <<'EOF'
+          FROM eclipse-temurin:17-jre
+          WORKDIR /app
+          COPY app.jar app.jar
+          EXPOSE 8080
+          ENTRYPOINT ["java", "-jar", "app.jar"]
+          EOF
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./docker-context
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:latest
