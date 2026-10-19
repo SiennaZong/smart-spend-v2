@@ -62,9 +62,9 @@ body {
 
 /* ===== 顶部导航 ===== */
 .topbar {
-    background: linear-gradient(90deg, #4f46e5, #7c3aed, #2563eb, #8b5cf6, #4f46e5);
+    background: linear-gradient(90deg, #2563eb, #06b6d4, #8b5cf6, #ec4899, #6366f1, #2563eb);
     background-size: 300% 100%;
-    box-shadow: 0 2px 16px rgba(79, 70, 229, .4);
+    box-shadow: 0 2px 16px rgba(99, 102, 241, .45);
     animation: topbarFlow 8s ease infinite;
 }
 @keyframes topbarFlow {
