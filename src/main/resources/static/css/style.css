@@ -489,7 +489,168 @@ select.input { cursor: pointer; }
 .empty-hint {
     text-align: center;
     color: var(--text-muted);
-    padding: 28px 0;
+    padding: 40px 20px;
+    font-size: 15px;
+    line-height: 2;
+}
+.empty-hint .empty-icon {
+    display: block;
+    font-size: 48px;
+    margin-bottom: 12px;
+    opacity: .6;
+    animation: floatIcon 3s ease-in-out infinite;
+}
+@keyframes floatIcon {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+/* 骨架屏 */
+.skeleton {
+    background: linear-gradient(90deg, var(--border) 25%, color-mix(in srgb, var(--border) 60%, var(--card)) 37%, var(--border) 63%);
+    background-size: 400% 100%;
+    animation: skeletonShimmer 1.4s ease infinite;
+    border-radius: 8px;
+    color: transparent !important;
+}
+@keyframes skeletonShimmer {
+    0% { background-position: 100% 50%; }
+    100% { background-position: 0 50%; }
+}
+.skeleton-row { height: 44px; margin: 8px 16px; }
+
+/* 按钮 loading 状态 */
+.btn.is-loading {
+    pointer-events: none;
+    opacity: .75;
+}
+.btn.is-loading::before {
+    content: "";
+    display: inline-block;
+    width: 14px; height: 14px;
+    margin-right: 8px;
+    border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    vertical-align: -2px;
+    animation: spin .7s linear infinite;
+}
+.btn-secondary.is-loading::before {
+    border-color: rgba(99,102,241,.3);
+    border-top-color: var(--primary);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 分类推荐高亮动画 */
+.input.cat-suggested {
+    animation: catPulse 1.2s ease;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, .2);
+}
+@keyframes catPulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(168, 85, 247, .2); }
+    50% { box-shadow: 0 0 0 6px rgba(168, 85, 247, .1); }
+}
+
+/* AI 报告操作栏 */
+.report-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+}
+
+/* 消费日历热力图 */
+.calendar-heatmap {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-bottom: 16px;
+}
+.cal-weekday {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 4px 0;
+}
+.cal-day {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: default;
+    transition: transform .15s ease, box-shadow .15s ease;
+    position: relative;
+    background: color-mix(in srgb, var(--border) 50%, transparent);
+    color: var(--text-muted);
+}
+.cal-day:not(.empty):hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, .3);
+    z-index: 2;
+}
+.cal-day.empty { background: transparent; }
+.cal-day.today { outline: 2px solid var(--primary); }
+.cal-day.l0 { background: color-mix(in srgb, var(--border) 50%, transparent); color: var(--text-muted); }
+.cal-day.l1 { background: #c7d2fe; color: #3730a3; }
+.cal-day.l2 { background: #a5b4fc; color: #312e81; }
+.cal-day.l3 { background: #818cf8; color: #fff; }
+.cal-day.l4 { background: #6366f1; color: #fff; box-shadow: 0 0 10px rgba(99,102,241,.5); }
+.cal-day .cal-tooltip {
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1e293b;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s;
+    z-index: 10;
+}
+.cal-day:hover .cal-tooltip { opacity: 1; }
+
+.calendar-legend {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: flex-end;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.cal-legend-box {
+    width: 16px; height: 16px;
+    border-radius: 4px;
+}
+.cal-legend-box.l0 { background: color-mix(in srgb, var(--border) 50%, transparent); }
+.cal-legend-box.l1 { background: #c7d2fe; }
+.cal-legend-box.l2 { background: #a5b4fc; }
+.cal-legend-box.l3 { background: #818cf8; }
+.cal-legend-box.l4 { background: #6366f1; }
+
+/* 列表分页 */
+.pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 0 6px;
+}
+.page-info {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 600;
+    min-width: 60px;
+    text-align: center;
 }
 
 /* ===== 图表 ===== */

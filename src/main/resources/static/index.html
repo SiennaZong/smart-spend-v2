@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartSpend - 个人生活记账本</title>
-    <link rel="stylesheet" href="css/style.css?v=20261019b">
+    <link rel="stylesheet" href="css/style.css?v=20261019c">
 </head>
 <body>
 
@@ -71,6 +71,19 @@
                 <div class="chart-wrap"><canvas id="ovBarChart"></canvas></div>
             </div>
         </div>
+        <div class="card">
+            <h3 class="card-title">🗓 本月消费日历</h3>
+            <div id="calendarHeatmap" class="calendar-heatmap"></div>
+            <div class="calendar-legend">
+                <span>少</span>
+                <span class="cal-legend-box l0"></span>
+                <span class="cal-legend-box l1"></span>
+                <span class="cal-legend-box l2"></span>
+                <span class="cal-legend-box l3"></span>
+                <span class="cal-legend-box l4"></span>
+                <span>多</span>
+            </div>
+        </div>
     </section>
 
     <!-- 录入页 -->
@@ -105,7 +118,7 @@
                     <div class="note-hint-title">💡 常用备注</div>
                     <div class="note-hint-list" id="noteHintList"></div>
                 </div>
-                <button type="submit" class="btn btn-primary btn-lg">保存记录</button>
+                <button type="submit" id="btnSaveTx" class="btn btn-primary btn-lg">保存记录</button>
             </form>
         </div>
     </section>
@@ -136,7 +149,12 @@
                 </thead>
                 <tbody id="txBody"></tbody>
             </table>
-            <div id="txEmpty" class="empty-hint">本月暂无记录，去「录入」页添加一笔吧～</div>
+            <div id="txEmpty" class="empty-hint" hidden><span class="empty-icon">📝</span>本月暂无记录，去「录入」页添加一笔吧～</div>
+            <div id="txPagination" class="pagination" hidden>
+                <button id="txPrevPage" class="btn btn-secondary btn-sm">上一页</button>
+                <span id="txPageInfo" class="page-info">1 / 1</span>
+                <button id="txNextPage" class="btn btn-secondary btn-sm">下一页</button>
+            </div>
         </div>
     </section>
 
@@ -191,6 +209,10 @@
         <div id="aiStatus" class="ai-status"></div>
         <div class="card report-card">
             <div id="aiReport" class="report">点击上方按钮，AI 理财顾问将基于你的本月收支、预算执行与异常检测数据生成一份专属分析报告。</div>
+            <div id="aiReportActions" class="report-actions" hidden>
+                <button id="btnCopyReport" class="btn btn-secondary">📋 复制报告</button>
+                <button id="btnExportReport" class="btn btn-secondary">⬇ 导出图片</button>
+            </div>
         </div>
     </section>
 
@@ -294,6 +316,6 @@
 <div id="toast" class="toast" hidden></div>
 
 <script src="js/chart.umd.min.js?v=1" defer></script>
-<script src="js/app.js?v=20261019b" defer></script>
+<script src="js/app.js?v=20261019c" defer></script>
 </body>
 </html>

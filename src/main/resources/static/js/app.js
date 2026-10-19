@@ -306,6 +306,7 @@ async function loadOverview() {
         // 支出分类占比饼图 + 近6个月收支趋势柱状图（Chart.js）
         ovPieChart = renderPieChart("#ovPieChart", ovPieChart, stats.expenseByCategory || []);
         ovBarChart = renderBarChart("#ovBarChart", ovBarChart, stats.trend || []);
+        renderCalendarHeatmap(stats.dailyExpense || {}, month);
 
         // 缓存
         fullStatsCache = stats;
@@ -315,6 +316,37 @@ async function loadOverview() {
         $("#ovExpense").textContent = "加载失败";
         $("#ovBalance").textContent = "加载失败";
     }
+}
+
+/* 消费日历热力图渲染 */
+function renderCalendarHeatmap(dailyMap, monthStr) {
+    const el = $("#calendarHeatmap");
+    if (!el) return;
+    const [y, m] = monthStr.split("-").map(Number);
+    const firstDay = new Date(y, m - 1, 1).getDay();
+    const daysInMonth = new Date(y, m, 0).getDate();
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === y && today.getMonth() === m - 1;
+
+    const values = Object.values(dailyMap).map(Number);
+    const max = Math.max(...values, 1);
+
+    const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+    let html = weekdays.map((w) => `<div class="cal-weekday">${w}</div>`).join("");
+    for (let i = 0; i < firstDay; i++) html += `<div class="cal-day empty"></div>`;
+    for (let d = 1; d <= daysInMonth; d++) {
+        const key = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        const val = dailyMap[key] || 0;
+        let lvl = 0;
+        if (val > 0) {
+            const ratio = val / max;
+            lvl = ratio < 0.25 ? 1 : ratio < 0.5 ? 2 : ratio < 0.75 ? 3 : 4;
+        }
+        const isToday = isCurrentMonth && today.getDate() === d;
+        const tip = val > 0 ? `支出 ¥${val.toFixed(2)}` : "无支出";
+        html += `<div class="cal-day l${lvl} ${isToday ? "today" : ""}">${d}<span class="cal-tooltip">${key} · ${tip}</span></div>`;
+    }
+    el.innerHTML = html;
 }
 
 function fullDaysOfMonth() {
@@ -348,6 +380,10 @@ $$('input[name="txType"]').forEach((r) => r.addEventListener("change", () => {
 /* ---------- 录入 ---------- */
 $("#entryForm").addEventListener("submit", async (e) => {
     e.preventDefault();
+    const btn = $("#btnSaveTx");
+    const oldText = btn.textContent;
+    btn.classList.add("is-loading");
+    btn.textContent = "保存中…";
     const body = {
         date: $("#date").value,
         category: $("#category").value,
@@ -363,12 +399,44 @@ $("#entryForm").addEventListener("submit", async (e) => {
         toast("记录保存成功！", "success");
         $("#amount").value = "";
         $("#note").value = "";
+        $("#category").value = document.querySelector('input[name="txType"]:checked').value === "EXPENSE" ? "FOOD" : "SALARY";
         updateNoteHints();
         checkBudgetWarning(body.category, Number(body.amount));
         if ($("#tab-overview").classList.contains("active")) loadOverview();
         if ($("#tab-list").classList.contains("active")) loadTransactions();
     } catch (err) {
         toast(err.message, "error");
+    } finally {
+        btn.classList.remove("is-loading");
+        btn.textContent = oldText;
+    }
+});
+
+/* 根据备注智能推荐分类 */
+function suggestCategoryByNote(note) {
+    if (!note || !fullTxCache.length) return null;
+    const kw = note.trim().toLowerCase();
+    if (!kw) return null;
+    const map = {};
+    fullTxCache.forEach((t) => {
+        if ((t.note || "").toLowerCase().includes(kw) || kw.includes((t.note || "").toLowerCase().slice(0, 4))) {
+            map[t.category] = (map[t.category] || 0) + 1;
+        }
+    });
+    let best = null, max = 0;
+    for (const k in map) { if (map[k] > max) { max = map[k]; best = k; } }
+    return best;
+}
+
+$("#note").addEventListener("input", (e) => {
+    const cat = suggestCategoryByNote(e.target.value);
+    if (cat && $("#category").value !== cat) {
+        const opts = Array.from($("#category").options).map((o) => o.value);
+        if (opts.includes(cat)) {
+            $("#category").value = cat;
+            $("#category").classList.add("cat-suggested");
+            setTimeout(() => $("#category").classList.remove("cat-suggested"), 1200);
+        }
     }
 });
 
@@ -383,10 +451,21 @@ function escapeRegExp(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
 
 async function loadTransactions() {
     const month = $("#txMonth").value;
-    const data = await api("/api/transactions?month=" + month);
-    fullTxCache = data.list;
-    renderTxTable();
+    const tbody = $("#txBody");
+    $("#txEmpty").hidden = true;
+    tbody.innerHTML = Array(5).fill('<tr><td colspan="6"><div class="skeleton skeleton-row"></div></td></tr>').join("");
+    try {
+        const data = await api("/api/transactions?month=" + month);
+        fullTxCache = data.list;
+        renderTxTable();
+    } catch (err) {
+        tbody.innerHTML = "";
+        toast(err.message, "error");
+    }
 }
+
+const PAGE_SIZE = 20;
+let txPage = 1;
 
 function renderTxTable() {
     let list = fullTxCache;
@@ -395,9 +474,14 @@ function renderTxTable() {
         const kw = searchText.trim().toLowerCase();
         list = list.filter((t) => (t.note || "").toLowerCase().includes(kw));
     }
+    txCache = list;
+
+    const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+    if (txPage > totalPages) txPage = totalPages;
+    const pageList = list.slice((txPage - 1) * PAGE_SIZE, txPage * PAGE_SIZE);
 
     const tbody = $("#txBody");
-    tbody.innerHTML = list.map((tx) => {
+    tbody.innerHTML = pageList.map((tx) => {
         const isIn = tx.type === "INCOME";
         const amtCls = isIn ? "amt-in" : "amt-out";
         const amtText = (isIn ? "+" : "-") + Number(tx.amount).toFixed(2);
@@ -410,8 +494,14 @@ function renderTxTable() {
             <td class="op"><button class="btn btn-secondary btn-sm" data-edit="${tx.id}">编辑</button><button class="btn btn-danger" data-del="${tx.id}">删除</button></td>
         </tr>`;
     }).join("");
-    txCache = list;
     $("#txEmpty").hidden = list.length > 0;
+
+    // 分页控件
+    const pag = $("#txPagination");
+    pag.hidden = list.length <= PAGE_SIZE;
+    $("#txPageInfo").textContent = `${txPage} / ${totalPages}`;
+    $("#txPrevPage").disabled = txPage <= 1;
+    $("#txNextPage").disabled = txPage >= totalPages;
 
     // 重新计算过滤后的汇总
     const inc = list.filter((t) => t.type === "INCOME").reduce((s, t) => s + t.amount, 0);
@@ -447,16 +537,22 @@ $$("#filterType .filter-pill").forEach((btn) => {
         $$("#filterType .filter-pill").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         filterType = btn.dataset.type;
+        txPage = 1;
         renderTxTable();
     });
 });
 $("#txSearch").addEventListener("input", (e) => {
     searchText = e.target.value;
+    txPage = 1;
     renderTxTable();
 });
 
-$("#btnRefreshTx").addEventListener("click", () => loadTransactions().catch((e) => toast(e.message, "error")));
-$("#txMonth").addEventListener("change", () => loadTransactions().catch((e) => toast(e.message, "error")));
+$("#btnRefreshTx").addEventListener("click", () => { txPage = 1; loadTransactions().catch((e) => toast(e.message, "error")); });
+$("#txMonth").addEventListener("change", () => { txPage = 1; loadTransactions().catch((e) => toast(e.message, "error")); });
+
+/* 分页按钮 */
+$("#txPrevPage").addEventListener("click", () => { if (txPage > 1) { txPage--; renderTxTable(); } });
+$("#txNextPage").addEventListener("click", () => { txPage++; renderTxTable(); });
 
 /* ---------- 编辑记录 ---------- */
 function refreshEditCategoryOptions() {
@@ -745,20 +841,87 @@ $("#btnAnalyze").addEventListener("click", async () => {
     const btn = $("#btnAnalyze");
     const status = $("#aiStatus");
     const month = $("#aiMonth").value;
-    btn.disabled = true;
+    btn.classList.add("is-loading");
+    const oldText = btn.textContent;
+    btn.textContent = "分析中…";
     status.className = "ai-status loading";
     status.textContent = "🤖 AI 正在分析 " + month + " 的消费数据，请稍候（约 10~30 秒）...";
+    $("#aiReportActions").hidden = true;
     try {
         const data = await api("/api/ai/analyze?month=" + month, { method: "POST" });
         status.className = "ai-status";
         status.textContent = "";
         $("#aiReport").textContent = data.report;
+        $("#aiReportActions").hidden = false;
     } catch (err) {
         status.className = "ai-status error";
         status.textContent = "❌ " + err.message;
     } finally {
-        btn.disabled = false;
+        btn.classList.remove("is-loading");
+        btn.textContent = oldText;
     }
+});
+
+/* 复制 AI 报告 */
+$("#btnCopyReport").addEventListener("click", async () => {
+    const text = $("#aiReport").textContent;
+    try {
+        await navigator.clipboard.writeText(text);
+        toast("报告已复制到剪贴板", "success");
+    } catch {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        toast("报告已复制到剪贴板", "success");
+    }
+});
+
+/* 导出 AI 报告为图片 */
+$("#btnExportReport").addEventListener("click", () => {
+    const text = $("#aiReport").textContent;
+    const lines = text.split("\n");
+    const lineH = 28;
+    const pad = 40;
+    const maxW = 800;
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    ctx.font = "16px 'Microsoft YaHei', sans-serif";
+    const wrapped = [];
+    lines.forEach((line) => {
+        let cur = "";
+        for (const ch of line) {
+            if (ctx.measureText(cur + ch).width > maxW - pad * 2) {
+                wrapped.push(cur);
+                cur = ch;
+            } else cur += ch;
+        }
+        wrapped.push(cur);
+    });
+    const h = wrapped.length * lineH + pad * 2 + 60;
+    canvas.width = maxW * 2;
+    canvas.height = h * 2;
+    canvas.style.width = maxW + "px";
+    canvas.style.height = h + "px";
+    ctx.scale(2, 2);
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, "#1e1b4b");
+    grad.addColorStop(1, "#312e81");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, maxW, h);
+    ctx.fillStyle = "#a5b4fc";
+    ctx.font = "bold 20px 'Microsoft YaHei', sans-serif";
+    ctx.fillText("SmartSpend AI 消费分析报告", pad, pad + 10);
+    ctx.fillStyle = "#e0e7ff";
+    ctx.font = "16px 'Microsoft YaHei', sans-serif";
+    wrapped.forEach((l, i) => ctx.fillText(l, pad, pad + 50 + i * lineH));
+    const a = document.createElement("a");
+    a.download = "smartspend-ai-report.png";
+    a.href = canvas.toDataURL("image/png");
+    a.click();
+    toast("报告已导出为图片", "success");
 });
 
 /* ---------- 工具 ---------- */

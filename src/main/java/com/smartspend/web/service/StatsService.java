@@ -7,6 +7,7 @@ import com.smartspend.web.repo.BudgetRepository;
 import com.smartspend.web.repo.TransactionRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -113,6 +114,18 @@ public class StatsService {
             }
         }
         return result;
+    }
+
+    /** 某月每日支出汇总，key 为 yyyy-MM-dd 字符串 */
+    public Map<String, Double> dailyExpense(Long userId, YearMonth month) {
+        Map<String, Double> map = new LinkedHashMap<>();
+        for (Transaction tx : transactionsOfMonth(userId, month)) {
+            if (Category.TransactionType.EXPENSE.name().equals(tx.getType())) {
+                String day = tx.getDate().toString();
+                map.merge(day, tx.getAmount(), Double::sum);
+            }
+        }
+        return map;
     }
 
     public List<String> detectAnomalies(Long userId, YearMonth month) {

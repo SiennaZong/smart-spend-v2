@@ -265,6 +265,7 @@ public class ApiController {
         result.put("trend", trend);
         result.put("budgetUsage", budgetRows);
         result.put("anomalies", stats.detectAnomalies(userId, ym));
+        result.put("dailyExpense", stats.dailyExpense(userId, ym));
         return result;
     }
 
