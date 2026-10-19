@@ -34,9 +34,11 @@
 }
 
 [data-theme="dark"] .stat-card,
-[data-theme="dark"] .modal { background: #1e293b; }
-[data-theme="dark"] .data-table th { background: #1a2536; }
+[data-theme="dark"] .modal { background: linear-gradient(135deg, #1e293b, #1a2332); }
+[data-theme="dark"] .card { background: color-mix(in srgb, #1e293b 85%, transparent); }
+[data-theme="dark"] .data-table th { background: linear-gradient(180deg, #1a2536, #162032); }
 [data-theme="dark"] .data-table tbody tr:nth-child(even) { background: var(--table-stripe); }
+[data-theme="dark"] .data-table tbody tr:hover { background: rgba(99, 102, 241, .12); }
 [data-theme="dark"] .tab.active { background: var(--card); }
 [data-theme="dark"] .input { background: #0f172a; color: var(--text); }
 [data-theme="dark"] .radio-pill span { background: var(--card); color: var(--text); }
@@ -46,6 +48,13 @@
 [data-theme="dark"] .budget-bar-wrap { background: #334155; }
 [data-theme="dark"] .report { color: var(--text); }
 [data-theme="dark"] .chart-card canvas { filter: invert(.9) hue-rotate(180deg); }
+/* 深色模式下氛围光晕更暗、更有层次 */
+[data-theme="dark"] body::before {
+    background:
+        radial-gradient(circle at 15% 20%, rgba(99, 102, 241, .18) 0%, transparent 45%),
+        radial-gradient(circle at 85% 15%, rgba(168, 85, 247, .15) 0%, transparent 40%),
+        radial-gradient(circle at 50% 90%, rgba(6, 182, 212, .10) 0%, transparent 45%);
+}
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -64,13 +73,33 @@ body {
 .topbar {
     background: linear-gradient(90deg, #2563eb, #06b6d4, #8b5cf6, #ec4899, #6366f1, #2563eb);
     background-size: 300% 100%;
-    box-shadow: 0 2px 16px rgba(99, 102, 241, .45);
+    box-shadow: 0 4px 24px rgba(99, 102, 241, .35);
     animation: topbarFlow 8s ease infinite;
+    position: relative;
+    z-index: 10;
 }
 @keyframes topbarFlow {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
+}
+
+/* 主界面氛围光晕背景 */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(circle at 15% 20%, rgba(99, 102, 241, .10) 0%, transparent 45%),
+        radial-gradient(circle at 85% 15%, rgba(168, 85, 247, .08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 90%, rgba(6, 182, 212, .06) 0%, transparent 45%);
+    pointer-events: none;
+    z-index: 0;
+    animation: ambientDrift 18s ease-in-out infinite;
+}
+@keyframes ambientDrift {
+    0%, 100% { transform: scale(1) translate(0, 0); }
+    50% { transform: scale(1.08) translate(-2%, 1%); }
 }
 
 .topbar-inner {
@@ -103,6 +132,8 @@ body {
     padding: 0 28px;
     display: flex;
     gap: 8px;
+    position: relative;
+    z-index: 2;
 }
 
 .tab {
@@ -131,10 +162,12 @@ body {
     max-width: 1180px;
     margin: 0 auto;
     padding: 16px 28px 40px;
+    position: relative;
+    z-index: 1;
 }
 
 .panel { display: none; }
-.panel.active { display: block; animation: fadeIn .25s ease; }
+.panel.active { display: block; animation: fadeIn .35s ease; }
 
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(6px); }
@@ -143,17 +176,45 @@ body {
 
 /* ===== 卡片 ===== */
 .card {
-    background: var(--card);
-    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--card) 82%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
     border-radius: var(--radius);
     padding: 24px;
-    box-shadow: 0 1px 4px rgba(30, 41, 59, .05);
+    box-shadow: 0 4px 20px rgba(30, 41, 59, .06), 0 1px 2px rgba(30, 41, 59, .04);
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    position: relative;
+    z-index: 1;
 }
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(99, 102, 241, .12), 0 2px 6px rgba(30, 41, 59, .06);
+    border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+}
+
+/* 卡片左侧渐变光带，增强精致度 */
+.card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 14px; bottom: 14px;
+    width: 3px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, var(--primary), var(--accent));
+    opacity: 0;
+    transition: opacity .25s ease;
+}
+.card:hover::before { opacity: 1; }
 
 .card-title {
     font-size: 19px;
     font-weight: 700;
     margin-bottom: 18px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
 }
 
 .gradient-text {
@@ -258,10 +319,27 @@ select.input { cursor: pointer; }
 .btn-primary {
     background: linear-gradient(90deg, var(--primary), var(--accent));
     color: #fff;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, .35);
+    box-shadow: 0 2px 10px rgba(99, 102, 241, .35);
+    position: relative;
+    overflow: hidden;
+    animation: btnGlow 3s ease-in-out infinite;
 }
+@keyframes btnGlow {
+    0%, 100% { box-shadow: 0 2px 10px rgba(99, 102, 241, .35); }
+    50% { box-shadow: 0 2px 16px rgba(168, 85, 247, .5); }
+}
+.btn-primary::after {
+    content: "";
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.3), transparent);
+    transform: skewX(-20deg);
+    transition: left .5s ease;
+}
+.btn-primary:hover::after { left: 120%; }
 
-.btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.btn-primary:hover { filter: brightness(1.08); transform: translateY(-2px); }
 
 .btn-secondary {
     background: var(--card);
@@ -317,23 +395,55 @@ select.input { cursor: pointer; }
 }
 
 .stat-card {
-    background: var(--card);
-    border: 1px solid var(--border);
+    background: linear-gradient(135deg, color-mix(in srgb, var(--card) 90%, transparent), color-mix(in srgb, var(--card) 75%, transparent));
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
     border-radius: var(--radius);
-    padding: 16px 20px;
+    padding: 18px 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    box-shadow: 0 1px 4px rgba(30, 41, 59, .05);
+    box-shadow: 0 4px 18px rgba(30, 41, 59, .06);
+    transition: transform .25s ease, box-shadow .25s ease;
+    position: relative;
+    overflow: hidden;
+}
+.stat-card:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 12px 28px rgba(99, 102, 241, .15);
+}
+/* 汇总卡片左上角小色标 */
+.stat-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+    background: linear-gradient(180deg, var(--primary), var(--accent));
+    opacity: .6;
 }
 
-.stat-label { color: var(--text-muted); font-size: 13px; }
+.stat-label { color: var(--text-muted); font-size: 13px; font-weight: 600; }
 
-.stat-value { font-size: 26px; font-weight: 700; margin-top: 2px; }
+.stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    margin-top: 4px;
+    letter-spacing: -.5px;
+}
 
-.stat-value.income { color: var(--income); }
-.stat-value.expense { color: var(--expense); }
-.stat-value.balance { color: var(--balance); }
+.stat-value.income {
+    color: var(--income);
+    text-shadow: 0 1px 8px rgba(16, 185, 129, .2);
+}
+.stat-value.expense {
+    color: var(--expense);
+    text-shadow: 0 1px 8px rgba(239, 68, 68, .2);
+}
+.stat-value.balance {
+    color: var(--balance);
+    text-shadow: 0 1px 8px rgba(59, 130, 246, .2);
+}
 
 /* ===== 表格 ===== */
 .table-card { padding: 6px 6px 10px; overflow-x: auto; }
@@ -341,7 +451,7 @@ select.input { cursor: pointer; }
 .data-table { width: 100%; border-collapse: collapse; }
 
 .data-table th {
-    background: #f8fafc;
+    background: linear-gradient(180deg, #f8fafc, #f1f5f9);
     color: var(--text-muted);
     font-size: 13px;
     font-weight: 700;
@@ -354,11 +464,13 @@ select.input { cursor: pointer; }
     padding: 12px 16px;
     border-bottom: 1px solid #f1f5f9;
     font-size: 14px;
+    transition: background .15s ease;
 }
 
 .data-table tbody tr:nth-child(even) { background: #f8fafc; }
 
 .data-table tbody tr:hover { background: var(--label-bg); }
+.data-table tbody tr:hover td { transform: translateX(2px); }
 
 .data-table .num { text-align: right; font-weight: 700; }
 

@@ -7,6 +7,24 @@ const fmtMoney = (v) => "¥" + Number(v).toFixed(2);
 const TYPE_LABEL = { INCOME: "收入", EXPENSE: "支出" };
 const MONTH_FMT = { year: "numeric", month: "2-digit" };
 
+/* 数字滚动计数动画 */
+function animateNumber(el, target) {
+    if (!el) return;
+    const from = 0;
+    const to = Number(target) || 0;
+    const duration = 900;
+    const start = performance.now();
+    function tick(now) {
+        const p = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        const val = from + (to - from) * eased;
+        el.textContent = fmtMoney(val);
+        if (p < 1) requestAnimationFrame(tick);
+        else el.textContent = fmtMoney(to);
+    }
+    requestAnimationFrame(tick);
+}
+
 let pieChart = null;
 let barChart = null;
 let ovPieChart = null;
@@ -253,9 +271,9 @@ async function loadOverview() {
             api("/api/stats?month=" + month),
             api("/api/budgets?month=" + month)
         ]);
-        $("#ovIncome").textContent = fmtMoney(stats.summary.income);
-        $("#ovExpense").textContent = fmtMoney(stats.summary.expense);
-        $("#ovBalance").textContent = fmtMoney(stats.summary.balance);
+        animateNumber($("#ovIncome"), stats.summary.income);
+        animateNumber($("#ovExpense"), stats.summary.expense);
+        animateNumber($("#ovBalance"), stats.summary.balance);
 
         const incomeDays = fullDaysOfMonth();
         const incomeAvg = stats.summary.income / incomeDays;
@@ -398,9 +416,9 @@ function renderTxTable() {
     // 重新计算过滤后的汇总
     const inc = list.filter((t) => t.type === "INCOME").reduce((s, t) => s + t.amount, 0);
     const exp = list.filter((t) => t.type === "EXPENSE").reduce((s, t) => s + t.amount, 0);
-    $("#sumIncome").textContent = fmtMoney(inc);
-    $("#sumExpense").textContent = fmtMoney(exp);
-    $("#sumBalance").textContent = fmtMoney(inc - exp);
+    animateNumber($("#sumIncome"), inc);
+    animateNumber($("#sumExpense"), exp);
+    animateNumber($("#sumBalance"), inc - exp);
 
     $$("button[data-edit]").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -625,9 +643,9 @@ async function loadStats() {
     const month = $("#statsMonth").value;
     const data = await api("/api/stats?month=" + month);
 
-    $("#stIncome").textContent = fmtMoney(data.summary.income);
-    $("#stExpense").textContent = fmtMoney(data.summary.expense);
-    $("#stBalance").textContent = fmtMoney(data.summary.balance);
+    animateNumber($("#stIncome"), data.summary.income);
+    animateNumber($("#stExpense"), data.summary.expense);
+    animateNumber($("#stBalance"), data.summary.balance);
 
     pieChart = renderPieChart("#pieChart", pieChart, data.expenseByCategory);
     barChart = renderBarChart("#barChart", barChart, data.trend);
